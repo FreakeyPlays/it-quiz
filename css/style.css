@@ -1,0 +1,367 @@
+/*########## Variables ##########*/
+
+:root {
+  --page-color: #777067;
+  --bg-color: #eaeae7;
+  --primary-color: #c6d547;
+
+  --font-color: #565f63;
+  --font-highlighted: #a3aeb1;
+
+  --font-family: Montserrat;
+}
+
+/*########## Basic Styling ##########*/
+
+* {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+html {
+  height: 100%;
+  font-family: var(--font-family);
+  color: var(--font-color);
+}
+
+body {
+  height: 100%;
+  background-color: var(--page-color);
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+header {
+  background-color: var(--primary-color);
+  text-align: center;
+  padding: 1em 0 1em 0;
+}
+
+header h1 span {
+  font-weight: 800;
+}
+header h1 {
+  font-weight: 400;
+}
+
+.main {
+  height: 100%;
+}
+
+main {
+  height: 100%;
+  background-color: var(--bg-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+footer {
+  text-align: center;
+  font-size: 10pt;
+  padding: 0.5em 0 0.5em 0;
+  background-color: var(--primary-color);
+}
+
+header,
+main,
+footer,
+.selectBar,
+.resultControl {
+  width: 100%;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+/*########## LogIn Page ##########*/
+
+input:placeholder-shown:invalid {
+  background-color: #eaeae7;
+}
+
+input:invalid {
+  background-color: #f76d63;
+}
+
+.logInBox {
+  padding: 1em 0 1em 0;
+  width: 70%;
+  margin: 0 auto;
+  text-align: center;
+  border: solid 1px #999;
+  border-radius: 1.5em;
+  box-shadow: rgba(0, 0, 0, 0.2) 0px 20px 30px;
+}
+
+.usernameInput {
+  margin: 1em 0 0.3em 0;
+}
+
+.passwordInput {
+  margin: 0.3em 0 1em 0;
+}
+
+.usernameInput,
+.passwordInput {
+  border: 2px solid #000;
+  border-radius: 20px;
+  background: none;
+  padding: 8px 10px;
+  text-align: center;
+}
+
+.usernameInput:focus,
+.passwordInput:focus {
+  background-color: #d6d6d6;
+}
+
+.logInBtn {
+  padding: 0.7em 2em;
+  border: 1px solid #000;
+  border-radius: 20px;
+  font-weight: 600;
+  color: var(--font-color);
+}
+
+.logInBtn:disabled {
+  opacity: 0.7;
+}
+
+.logInBtn:disabled:hover {
+  cursor: default;
+  background-color: transparent;
+}
+
+.logInBtn:hover {
+  background-color: #fff;
+  cursor: pointer;
+}
+
+/*########## Loading Page ##########*/
+
+.loadingBoxTop {
+  width: 70%;
+  max-width: 400px;
+  position: relative;
+}
+
+.loadingBoxBottom {
+  margin-top: 100%;
+}
+
+.loadingBoxCircle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #fff;
+  border-radius: 50%;
+  border: solid 4px;
+  border-color: transparent var(--primary-color) transparent
+    var(--primary-color);
+  animation: loading 2s linear infinite;
+}
+
+.loadingScreenText {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+/*########## Animation ##########*/
+
+@keyframes loading {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/*########## Select Page ##########*/
+
+.actionMessage {
+  font-size: 15pt;
+}
+
+#selectTheme,
+#selectChapter {
+  width: 50%;
+  float: left;
+  height: 2em;
+  background-color: var(--bg-color);
+}
+
+option:disabled {
+  font-weight: bold;
+  font-size: 12pt;
+}
+
+@media screen and (max-width: 360px) {
+  #selectTheme,
+  #selectChapter {
+    width: 100%;
+  }
+}
+
+/*########## Quiz Page ##########*/
+.questionBox {
+  padding: 1em 1em 1em 1em;
+  width: 70%;
+  margin: 0 auto;
+  border: solid 1px #999;
+  border-radius: 1.5em;
+  box-shadow: rgba(0, 0, 0, 0.2) 0px 20px 30px;
+}
+
+.submitBtn {
+  position: relative;
+  left: 50%;
+  transform: translate(-50%);
+  padding: 10px 15px;
+  border: 1px solid #000;
+  border-radius: 20px;
+  font-weight: 600;
+  color: var(--font-color);
+}
+
+.submitBtn:hover {
+  background-color: #fff;
+  cursor: pointer;
+}
+
+.quizAnswers {
+  margin: 5px 0;
+  padding: 5px;
+}
+
+.quizAnswers input {
+  margin-right: 4px;
+}
+
+.quizAnswers:hover {
+  background-color: #fff;
+  font-weight: bold;
+  transition: linear 0.4s background-color;
+}
+
+/*########## Result ##########*/
+
+.resultBoxTop {
+  width: 70%;
+  max-width: 400px;
+  position: relative;
+}
+
+.resultBoxBottom {
+  margin-top: 100%;
+}
+
+.resultBoxContent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.resultRight {
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-image: url("../img/right.svg");
+}
+
+.resultWrong {
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-image: url("../img/wrong.svg");
+}
+
+.resultControl {
+  background-color: var(--bg-color);
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: space-around;
+}
+
+.resultButton {
+  float: left;
+  width: 40%;
+  padding: 0.5em 0;
+  border-radius: 30px;
+  margin: 0.5em 0;
+  border: solid 1px #333;
+  font-size: 120%;
+}
+
+.resultButton:hover {
+  background-color: #fff;
+  cursor: pointer;
+}
+
+/*########## Summary ##########*/
+.summaryBoxTop {
+  width: 70%;
+  max-width: 400px;
+  position: relative;
+}
+
+.summaryBoxBottom {
+  margin-top: 100%;
+}
+
+.summaryBoxContent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: conic-gradient(#f44336 90deg, #43a047 0deg);
+  border-radius: 50%;
+}
+
+.summaryTopic {
+  font-weight: bold;
+  font-size: 20pt;
+  margin-top: 2em;
+}
+
+.summaryChapter {
+  font-size: 16pt;
+}
+
+.summaryLabelLeft,
+.summaryLabelRight {
+  padding: 5px;
+  background-color: var(--bg-color);
+  border-radius: 8px;
+}
+
+.summaryLabelLeft {
+  float: left;
+  text-align: left;
+}
+
+.summaryLabelRight {
+  float: right;
+  text-align: right;
+}
+
+.area {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
