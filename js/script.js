@@ -2,6 +2,11 @@ window.addEventListener("load", function(){ quizObj.init() })
 
 const quizObj = {
     url: "https://www2.hs-esslingen.de/~melcher/internet-technologien/quiz/",
+    token: null,
+    themes: [],
+    chapters: [],
+    choosenTheme: null,
+    choosenChapter: null,
     init(){
         body = document.body;
         const page = this.makePage();
@@ -10,39 +15,37 @@ const quizObj = {
         this.showStatePage("Not logged in");
     },
 
-    pageLoginSend(usrId, usrPwd){
-        this.showStatePage("Logging in...");
-        try {
-            fetch(this.url + `?request=login&userid=${usrId}&password=${usrPwd}`)
-            .then(response => response.json())
-            .then(data => {
-                if(data.status == "error"){
-                    this.showStatePage("Wrong input");
-                }else{
-                    this.showStatePage("Select Theme");
-                }
-            });
-        } catch (error) {
-            this.showStatePage("Wrong input")
-        }
-    },
-
     showStatePage(state){
         switch (state) {
             case "Not logged in":
-                    this.pageLogin();
+                this.pageLogin();
                 break;
             case "Logging in...":
-                    this.pageWait("Logging in...");
+                this.pageWait("Logging in...");
                 break;
             case "Wrong input":
-                    this.pageLogin("Wrong Username or Password!");
+                this.pageLogin("Wrong Username or Password!");
                 break;
             case "Select Theme":
-                    this.pageTheme();
+                this.pageTheme("Choose a Theme");
+                break;
+            case "Loading Themes":
+                this.pageWait("Loading Themes");
+                break;
+            case "Network Error":
+                this.pageWait("Network Error \n Please reload!");
+                break;
+            case "Loading Chapters":
+                this.pageWait("Loading Chapters");
+                break;
+            case "Select Chapter":
+                this.pageTheme("Choose a Chapter");
+                break;
+            case "Loading Quiz":
+                this.pageWait("Loading Quiz");
                 break;
             default:
-                    alert("This should not happen.\nError: " + state);
+                alert("This should not happen.\nError: " + state);
                 break;
         }
     },
@@ -131,10 +134,10 @@ const quizObj = {
         content.appendChild(wait);
     },
 
-    pageTheme(){
+    pageTheme(message){
         const content = this.getEmptyContent();
         this.addChapterBar();
-        const select = this.contentChapterSelect();
+        const select = this.contentChapterSelect(message);
 
         content.appendChild(select);
     },
@@ -225,7 +228,7 @@ const quizObj = {
         const loadingBoxCircle = this.createElement("div", "loadingBoxCircle");
 
         const loadingScreenText = this.createElement("div", "loadingScreenText");
-        const text = this.createElement("H2", "loadingMessage");    // Eventuell ID anstatt Class
+        const text = this.createElement("H2", "loadingMessage");
         if(message == undefined)
             text.innerHTML = "Loading...";
         else
@@ -247,10 +250,32 @@ const quizObj = {
         const main = document.getElementsByClassName("main")[0];
         
         const selectBar = this.createElement("div", "selectBar");
-        selectBar.appendChild( this.makeSelect("selectTheme", "Theme", [{value: "java", name: "Java"}, {value: "it", name: "Internet-Technology"}]) );
-        selectBar.appendChild( this.makeSelect("selectChapter", "Chapter", [{value: "it-basics", name: "Basics"}, {value: "it-html", name: "HTML"}, {value: "it-css", name: "CSS"}]) );
+        const themeSelect = this.makeSelect("selectTheme", "Theme", this.themes);
+        themeSelect.addEventListener("change", e => this.onThemeSelect(e));
+        selectBar.appendChild( themeSelect );
+        const chapterSelect = this.makeSelect("selectChapter", "Chapter", this.chapters);
+        chapterSelect.addEventListener("change", e => this.onChapterSelect(e));
+        selectBar.appendChild( chapterSelect );
 
-        page.insertBefore(selectBar, main)
+        page.insertBefore(selectBar, main);
+    },
+
+    onThemeSelect(e){
+        this.choosenTheme = e.srcElement.value;
+        
+        this.showStatePage("Loading Chapters");
+
+        this.fetchAndDecode(`request=gettheme&theme=${this.choosenTheme}&token=${this.token}`)
+            .then(data => {
+                this.chapters = data.chapters;
+                this.showStatePage("Select Chapter");
+            }).catch(err => this.showStatePage("Network Error"));
+    },
+
+    onChapterSelect(e){
+        this.choosenChapter = e.srcElement.value;
+
+        this.showStatePage("Loading Quiz")
     },
 
     removeChapterBar(){
@@ -260,9 +285,9 @@ const quizObj = {
             element.remove();
     },
 
-    contentChapterSelect(){
+    contentChapterSelect(msg){
         const message = this.createElement("div", "actionMessage");
-        message.innerHTML = "Please select a Theme and Chapter"
+        message.innerHTML = msg ? msg : "Please select Theme and Chapter";
 
         return message;
     },
@@ -351,6 +376,39 @@ const quizObj = {
         return box;
     },
 
+    // API Calls
+    pageLoginSend(usrId, usrPwd){
+        this.showStatePage("Logging in...");
+        try {
+            this.fetchAndDecode(`request=login&userid=${usrId}&password=${usrPwd}`)
+            .then(data => {
+                if(data.status == "error"){
+                    this.showStatePage("Wrong input");
+                }else{
+                    this.token = data.token;
+                    this.loadThemes();
+                }
+            });
+        } catch (error) {
+            this.showStatePage("Wrong input")
+        };
+    },
+
+    loadThemes(){
+        this.showStatePage("Loading Themes");
+
+        this.fetchAndDecode(`request=getthemes&token=${this.token}`)
+            .then(data => {
+                this.themes = data.themes
+                this.showStatePage("Select Theme")
+            }).catch(err => this.showStatePage("Network Error"));
+    },
+
+    fetchAndDecode(requestStr){
+        return fetch(this.url + "?" + requestStr)
+            .then(response => response.json());
+    },
+
     // Create Elements
 
     makeButton(message, classNames, attributes){
@@ -406,7 +464,7 @@ const quizObj = {
         for (let i = 0; i < list.length; i++) {
             const option = this.createElement("option");
             option.innerHTML = list[i].name;
-            option.setAttribute("value", list[i].value);
+            option.setAttribute("value", list[i].id);
 
             select.appendChild(option);
         }
