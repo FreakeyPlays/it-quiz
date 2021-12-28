@@ -6,9 +6,15 @@ const quizObj = {
     themes: [],
     chapters: [],
     choosenTheme: null,
+    themeName: null,
     choosenChapter: null,
+    chapterName: null,
+    quiz: null,
+    selectedAnswers: null,
+    passed: null,
+    
     init(){
-        body = document.body;
+        const body = document.body;
         const page = this.makePage();
         body.appendChild(page);
         
@@ -20,7 +26,7 @@ const quizObj = {
             case "Not logged in":
                 this.pageLogin();
                 break;
-            case "Logging in...":
+            case "Logging in":
                 this.pageWait("Logging in...");
                 break;
             case "Wrong input":
@@ -30,19 +36,43 @@ const quizObj = {
                 this.pageTheme("Choose a Theme");
                 break;
             case "Loading Themes":
-                this.pageWait("Loading Themes");
+                this.pageWait("Loading Themes...");
                 break;
             case "Network Error":
                 this.pageWait("Network Error \n Please reload!");
                 break;
             case "Loading Chapters":
-                this.pageWait("Loading Chapters");
+                this.pageWait("Loading Chapters...");
                 break;
             case "Select Chapter":
                 this.pageTheme("Choose a Chapter");
                 break;
             case "Loading Quiz":
-                this.pageWait("Loading Quiz");
+                this.pageWait("Loading Quiz...");
+                break;
+            case "Load Question":
+                this.pageWait("Load next Question...");
+                break;
+            case "Show Question":
+                this.pageQuiz();
+                break;
+            case "Repeat Question":
+                this.pageWait("Repeat Question...");
+                break;
+            case "Loading Answer":
+                this.pageWait("Loading Answer...");
+                break;
+            case "Correct Answer":
+                this.pageResult("resultRight");
+                break;
+            case "Wrong Answer":
+                this.pageResult("resultWrong");
+                break;
+            case "Loading Summary":
+                this.pageWait("Loading Summary...");
+                break;
+            case "Show Summary":
+                this.pageSummary();
                 break;
             default:
                 alert("This should not happen.\nError: " + state);
@@ -149,10 +179,10 @@ const quizObj = {
         content.appendChild(quiz);
     },
 
-    pageResult(){
+    pageResult(decision){
         const content = this.getEmptyContent();
         this.addResultBar();
-        const result = this.contentResult();
+        const result = this.contentResult(decision);
 
         content.appendChild(result);
     },
@@ -197,11 +227,7 @@ const quizObj = {
             form.appendChild(br3);
         }
 
-        const submitBtn = this.createElement("button", "logInBtn");
-        submitBtn.setAttribute("type", "submit");
-        submitBtn.setAttribute("name", "submit");
-        submitBtn.innerHTML = "Login";
-        submitBtn.setAttribute("disabled", true);
+        const submitBtn =  this.makeButton("Login", "logInBtn", [{name: "type", value: "button"}, {name: "name", value: "submit"}, {name: "disabled", value: true}]);
         form.appendChild(submitBtn);
 
         loginfield.appendChild(form);
@@ -262,6 +288,7 @@ const quizObj = {
 
     onThemeSelect(e){
         this.choosenTheme = e.srcElement.value;
+        this.themeName = e.srcElement.options[e.target.selectedIndex].innerHTML;
         
         this.showStatePage("Loading Chapters");
 
@@ -274,8 +301,15 @@ const quizObj = {
 
     onChapterSelect(e){
         this.choosenChapter = e.srcElement.value;
+        this.chapterName = e.srcElement.options[e.target.selectedIndex].innerHTML;
 
-        this.showStatePage("Loading Quiz")
+        this.showStatePage("Loading Quiz");
+
+        this.fetchAndDecode(`request=getquiz&theme=${this.choosenTheme}&chapter=${this.choosenChapter}&token=${this.token}`)
+            .then(data => {
+                this.quiz = data.quiz;
+                this.showStatePage("Show Question");
+            }).catch(err => this.showStatePage("Network Error"));
     },
 
     removeChapterBar(){
@@ -297,19 +331,42 @@ const quizObj = {
     contentQuiz(){
         const box = this.createElement("div", "questionBox");
 
-        box.appendChild(this.makeTitle("H2", "Request"));
+        box.appendChild(this.makeTitle("H2", this.quiz.title));
         box.appendChild(this.createElement("br"));
-        box.appendChild(this.makeTitle("H3", "What transport ptotocoll does HTTP use?"));
+        box.appendChild(this.makeTitle("H3", this.quiz.question));
         box.appendChild(this.createElement("br"));
         
-        var answerList = ["UDP", "TDP", "HTML", "FDP"];
-        answerList.forEach(e => box.appendChild(this.makeQuestion(e)));
+        const answers = this.createElement("div", "answerBox")
+        var answerList = this.quiz.answers;
+        answerList.forEach(ans => answers.appendChild(this.makeAnswer(ans)));
+        box.appendChild(answers);
 
         const button = this.makeButton("Submit", "submitBtn", [{name: "type", value: "submit"}, {name: "name", value: "submit"}]);
+        button.addEventListener("click", e => this.onAnswerSubmit(e));
 
         box.appendChild(button);
 
         return box;
+    },
+
+    getSelectedAnswers(){
+        const checkedAnswers = document.querySelectorAll("input[type=checkbox]:checked");
+        this.selectedAnswers = Array.from(checkedAnswers).map(node => node.getAttribute("data-id")).join();
+    },
+
+    onAnswerSubmit(e){
+        this.getSelectedAnswers();
+
+        this.showStatePage("Loading Answer");
+
+        this.fetchAndDecode(`request=validateanswer&selected=${this.selectedAnswers}&token=${this.token}`)
+            .then(data => {
+                if(data.decision){
+                    this.showStatePage("Correct Answer");
+                }else{
+                    this.showStatePage("Wrong Answer");
+                }
+            }).catch(err => this.showStatePage("Network Error"));
     },
 
     // Result
@@ -319,10 +376,51 @@ const quizObj = {
         const footer = document.getElementsByClassName("footer")[0];
         
         const resultBar = this.createElement("div", "pagecontainer resultControl");
-        resultBar.appendChild( this.makeButton("Repeat", "resultButton", [{name: "type", value: "submit"}, {name: "name", value: "repeat"}]) );
-        resultBar.appendChild( this.makeButton("Next", "resultButton", [{name: "type", value: "submit"}, {name: "name", value: "next"}]) );
+
+        const repeat = this.makeButton("Repeat", "resultButton", [{name: "type", value: "submit"}, {name: "name", value: "repeat"}]);
+        repeat.addEventListener("click", e => this.repeatQuestion(e));
+        resultBar.appendChild( repeat );
+        if(this.quiz.actual == this.quiz.total - 1){
+            const summary = this.makeButton("Summary", "resultButton", [{name: "type", value: "submit"}, {name: "name", value: "summary"}]);
+            summary.addEventListener("click", e => this.loadSummary(e));
+            resultBar.appendChild( summary );
+        }else{
+            const next = this.makeButton("Next", "resultButton", [{name: "type", value: "submit"}, {name: "name", value: "next"}]);
+            next.addEventListener("click", e => this.nextQuestion(e));
+            resultBar.appendChild( next ); 
+        }
 
         page.insertBefore(resultBar, footer)
+    },
+
+    loadSummary(e){
+        this.showStatePage("Loading Summary");
+
+        this.fetchAndDecode(`request=getsummary&token=${this.token}`)
+            .then(data => {
+                this.passed = parseInt((data.known / data.total) * 100)
+                this.showStatePage("Show Summary")
+            }).catch(err => this.showStatePage("Network Error"));
+    },
+
+    repeatQuestion(e){
+        this.showStatePage("Repeat Question");
+
+        this.fetchAndDecode(`request=getsamequiz&token=${this.token}`)
+            .then(data => {
+                this.quiz = data.quiz;
+                this.showStatePage("Show Question")
+            }).catch(err => this.showStatePage("Network Error"));
+    },
+
+    nextQuestion(e){
+        this.showStatePage("Load Question");
+
+        this.fetchAndDecode(`request=getnextquiz&token=${this.token}`)
+            .then(data => {
+                this.quiz = data.quiz;
+                this.showStatePage("Show Question");
+            });
     },
 
     removeResultBar(){
@@ -332,10 +430,10 @@ const quizObj = {
             element.remove();
     },
 
-    contentResult(){
+    contentResult(decision){
         const box = this.createElement("div", "resultBoxTop");
         const boxBottom = this.createElement("div", "resultBoxBottom");
-        const boxContent = this.createElement("div", "resultBoxContent resultRight");
+        const boxContent = this.createElement("div", "resultBoxContent " + decision);
 
         boxBottom.appendChild(boxContent);
         box.appendChild(boxBottom);
@@ -352,23 +450,24 @@ const quizObj = {
         const area = this.createElement("div", "summaryBoxContent summaryArea");
         const pie = this.createElement("div", "summaryPie");
         const left = this.createElement("div", "summaryLabelLeft");
-        left.innerHTML = "75% passed";
+        left.innerHTML = `${this.passed}% passed`;
         const right = this.createElement("div", "summaryLabelRight");
-        right.innerHTML = "25% failed";
+        right.innerHTML = `${100 - this.passed}% failed`;
 
         pie.appendChild(left);
         pie.appendChild(right);
 
         area.appendChild(pie);
+        area.style.backgroundImage = `conic-gradient(#f44336 ${360 - ((this.passed / 100) * 360)}deg, #43a047 0deg)`;
         bottom.appendChild(area);
         top.appendChild(bottom);
 
         box.appendChild(top);
 
         const topic = this.createElement("div", "summaryTopic");
-        topic.innerHTML = "Internet-Technology";
+        topic.innerHTML = this.themeName;
         const chapter = this.createElement("div", "summaryChapter");
-        chapter.innerHTML = "Basics";
+        chapter.innerHTML = this.chapterName;
 
         box.appendChild(topic);
         box.appendChild(chapter);
@@ -378,8 +477,7 @@ const quizObj = {
 
     // API Calls
     pageLoginSend(usrId, usrPwd){
-        this.showStatePage("Logging in...");
-        try {
+        this.showStatePage("Logging in");
             this.fetchAndDecode(`request=login&userid=${usrId}&password=${usrPwd}`)
             .then(data => {
                 if(data.status == "error"){
@@ -388,10 +486,7 @@ const quizObj = {
                     this.token = data.token;
                     this.loadThemes();
                 }
-            });
-        } catch (error) {
-            this.showStatePage("Wrong input")
-        };
+            }).catch(err => this.showStatePage("Wrong input"));
     },
 
     loadThemes(){
@@ -412,27 +507,21 @@ const quizObj = {
     // Create Elements
 
     makeButton(message, classNames, attributes){
-        const button = this.createElement("button");
+        const button = this.createElement("button", classNames);
         button.innerHTML = message;
-
-        if(classNames != null){
-            classList = classNames.split(" ");
-            classList.forEach(className => {
-                button.classList.add(className);
-            });
-        }
 
         attributes.forEach(e => button.setAttribute(e.name, e.value))
 
         return button;
     },
 
-    makeQuestion(text){
+    makeAnswer(answer){
         const div = this.createElement("div", "quizAnswers");
         const chkBox = this.createElement("input");
         chkBox.setAttribute("type", "checkbox");
+        chkBox.setAttribute("data-id", answer.id)
         div.appendChild(chkBox);
-        div.innerHTML += text;
+        div.innerHTML += answer.text;
 
         return div;
     },
@@ -496,7 +585,7 @@ const quizObj = {
     createElement(tag, classNames){
         const element = document.createElement(tag);
         if(classNames != null){
-            classList = classNames.split(" ");
+            var classList = classNames.split(" ");
             classList.forEach(className => {
                 element.classList.add(className);
             });
