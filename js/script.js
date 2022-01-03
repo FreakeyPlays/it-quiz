@@ -63,7 +63,7 @@ const quizObj = {
                 this.pageWait("Loading Answer...");
                 break;
             case "Correct Answer":
-                this.pageResult("resultRight");
+                this.pageResult("resultRight", "disabled");
                 break;
             case "Wrong Answer":
                 this.pageResult("resultWrong");
@@ -179,9 +179,9 @@ const quizObj = {
         content.appendChild(quiz);
     },
 
-    pageResult(decision){
+    pageResult(decision, option){
         const content = this.getEmptyContent();
-        this.addResultBar();
+        this.addResultBar(option);
         const result = this.contentResult(decision);
 
         content.appendChild(result);
@@ -371,13 +371,18 @@ const quizObj = {
 
     // Result
 
-    addResultBar(){
+    addResultBar(option){
         const page = document.getElementsByClassName("page")[0];
         const footer = document.getElementsByClassName("footer")[0];
         
         const resultBar = this.createElement("div", "pagecontainer resultControl");
 
-        const repeat = this.makeButton("Repeat", "resultButton", [{name: "type", value: "submit"}, {name: "name", value: "repeat"}]);
+        const attributes = [{name: "type", value: "submit"}, {name: "name", value: "repeat"}];
+        if(option){
+            attributes.push({name: option, value: option})
+        }
+
+        const repeat = this.makeButton("Repeat", "resultButton", attributes);
         repeat.addEventListener("click", e => this.repeatQuestion(e));
         resultBar.appendChild( repeat );
         if(this.quiz.actual == this.quiz.total - 1){
