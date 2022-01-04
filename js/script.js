@@ -189,7 +189,9 @@ const quizObj = {
 
     pageSummary(){
         const content = this.getEmptyContent();
+        this.addReplayBar();
         const summary = this.contentSummary();
+
 
         content.appendChild(summary);
     },
@@ -480,6 +482,27 @@ const quizObj = {
         return box;
     },
 
+    addReplayBar(){
+        const page = document.getElementsByClassName("page")[0];
+        const footer = document.getElementsByClassName("footer")[0];
+
+        const replayBar = this.createElement("div", "pagecontainer replayBar");
+        const replayBtn = this.makeButton("Replay", "replay-btn", [{name: "type", value: "submit"}, {name: "name", value: "replay"}]);
+        replayBtn.addEventListener( "click", () => {
+            this.loadThemes();
+        } )
+        replayBar.appendChild(replayBtn);
+
+        page.insertBefore(replayBar, footer);
+    },
+
+    removeReplayBar(){
+        const element = document.getElementsByClassName("replayBar")[0];
+        
+        if(element != null)
+            element.remove();
+    },
+
     // API Calls
     pageLoginSend(usrId, usrPwd){
         this.showStatePage("Logging in");
@@ -583,6 +606,7 @@ const quizObj = {
 
         this.removeChapterBar();
         this.removeResultBar();
+        this.removeReplayBar();
 
         return content;
     },
